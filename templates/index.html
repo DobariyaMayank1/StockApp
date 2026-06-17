@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Predictor Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background-color: #f4f6f9; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #2c3e50; }
+        input[type="text"] { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; background-color: #3498db; color: white; padding: 12px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        button:hover { background-color: #2980b9; }
+        .results { margin-top: 30px; padding: 20px; background-color: #eef2f7; border-radius: 6px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .card { background: white; padding: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); text-align: center; }
+        .price { font-size: 20px; font-weight: bold; color: #2e7d32; margin-top: 5px; }
+        .error { color: #c62828; background: #ffebee; padding: 10px; border-radius: 4px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔮 Stock Price Predictor</h1>
+    <p style="text-align: center;">Uses live Yahoo Finance data and a Random Forest ML model</p>
+    
+    <form method="POST">
+        <label for="ticker">Enter Stock Ticker Symbol:</label>
+        <input type="text" id="ticker" name="ticker" value="{{ ticker }}" placeholder="e.g. RELIANCE.NS, TCS.NS, AAPL">
+        <button type="submit">Fetch Live Data & Predict Tomorrow</button>
+    </form>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+    {% if prediction %}
+        <div class="results">
+            <h3>Predictions for Tomorrow's Session</h3>
+            <p><small>Based on live data finalized on: <strong>{{ prediction.as_of_date }}</strong></small></p>
+            <div class="grid">
+                <div class="card">Open<div class="price">₹{{ prediction.open }}</div></div>
+                <div class="card">High<div class="price">₹{{ prediction.high }}</div></div>
+                <div class="card">Low<div class="price">₹{{ prediction.low }}</div></div>
+                <div class="card">Close<div class="price">₹{{ prediction.close }}</div></div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+</body>
+</html>
