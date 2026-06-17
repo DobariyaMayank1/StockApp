@@ -3,31 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Predictor Dashboard</title>
+    <title>Stock Predictor Dashboard & Backtester</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background-color: #f4f6f9; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h1 { text-align: center; color: #2c3e50; }
-        input[type="text"] { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; background-color: #3498db; color: white; padding: 12px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
-        button:hover { background-color: #2980b9; }
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
+        .tabs { display: flex; margin: 20px 0; border-bottom: 2px solid #ddd; }
+        .tab { padding: 10px 20px; cursor: pointer; border: none; background: none; font-size: 16px; font-weight: bold; color: #7f8c8d; }
+        .tab.active { color: #3498db; border-bottom: 3px solid #3498db; }
+        input[type="text"], input[type="date"] { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        button.submit-btn { width: 100%; background-color: #3498db; color: white; padding: 12px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        button.submit-btn:hover { background-color: #2980b9; }
         .results { margin-top: 30px; padding: 20px; background-color: #eef2f7; border-radius: 6px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .card { background: white; padding: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); text-align: center; }
         .price { font-size: 20px; font-weight: bold; color: #2e7d32; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 4px; overflow: hidden; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #34495e; color: white; }
         .error { color: #c62828; background: #ffebee; padding: 10px; border-radius: 4px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🔮 Stock Price Predictor</h1>
-    <p style="text-align: center;">Uses live Yahoo Finance data and a Random Forest ML model</p>
+    <h1>🔮 Stock Predictor Studio</h1>
+    <p style="text-align: center; margin-top:0; color:#7f8c8d;">Live Production Inference & Historical Verification Engine</p>
     
-    <form method="POST">
-        <label for="ticker">Enter Stock Ticker Symbol:</label>
-        <input type="text" id="ticker" name="ticker" value="{{ ticker }}" placeholder="e.g. RELIANCE.NS, TCS.NS, AAPL">
-        <button type="submit">Fetch Live Data & Predict Tomorrow</button>
+    <form method="POST" id="mainForm">
+        <input type="hidden" name="mode" id="formMode" value="{{ mode }}">
+
+        <div class="tabs">
+            <button type="button" class="tab {% if mode == 'live' %}active{% endif %}" onclick="setMode('live')">Predict Tomorrow</button>
+            <button type="button" class="tab {% if mode == 'historical' %}active{% endif %}" onclick="setMode('historical')">Historical Backtest</button>
+        </div>
+
+        <label for="ticker">Stock Ticker Symbol:</label>
+        <input type="text" id="ticker" name="ticker" value="{{ ticker }}" placeholder="e.g. RELIANCE.NS, TCS.NS">
+
+        <div id="historical_date_section" style="display: {{ 'block' if mode == 'historical' else 'none' }};">
+            <label for="historical_date">Select Past Target Date to Verify:</label>
+            <input type="date" id="historical_date" name="historical_date" value="{{ selected_date }}">
+        </div>
+
+        <button type="submit" class="submit-btn">Execute Model Verification</button>
     </form>
 
     {% if error %}
@@ -36,17 +55,61 @@
 
     {% if prediction %}
         <div class="results">
-            <h3>Predictions for Tomorrow's Session</h3>
-            <p><small>Based on live data finalized on: <strong>{{ prediction.as_of_date }}</strong></small></p>
+            <h3>Forecast Details for Next Market Session</h3>
+            <p><small>Based on calculations finalized on trading close: <strong>{{ prediction.as_of_date }}</strong></small></p>
             <div class="grid">
-                <div class="card">Open<div class="price">₹{{ prediction.open }}</div></div>
-                <div class="card">High<div class="price">₹{{ prediction.high }}</div></div>
-                <div class="card">Low<div class="price">₹{{ prediction.low }}</div></div>
-                <div class="card">Close<div class="price">₹{{ prediction.close }}</div></div>
+                <div class="card">Predicted Open<div class="price">₹{{ prediction.open }}</div></div>
+                <div class="card">Predicted High<div class="price">₹{{ prediction.high }}</div></div>
+                <div class="card">Predicted Low<div class="price">₹{{ prediction.low }}</div></div>
+                <div class="card">Predicted Close<div class="price">₹{{ prediction.close }}</div></div>
             </div>
+        </div>
+    {% endif %}
+
+    {% if comparison %}
+        <div class="results">
+            <h3>Historical Backtest Evaluation: {{ comparison.date }}</h3>
+            <p><small>Data isolated completely prior to this session to maintain chronological testing standards.</small></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Model Prediction</th>
+                        <th>Actual Market Outlay</th>
+                        <th>Absolute Variance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in comparison.metrics %}
+                    <tr>
+                        <td><strong>{{ item.name }}</strong></td>
+                        <td>₹{{ item.pred }}</td>
+                        <td>₹{{ item.actual }}</td>
+                        <td style="color: #c62828;">₹{{ item.err }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     {% endif %}
 </div>
 
+<script>
+    function setMode(selectedMode) {
+        document.getElementById('formMode').value = selectedMode;
+        
+        // Update tab appearance
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        
+        if(selectedMode === 'live') {
+            tabs[0].classList.add('active');
+            document.getElementById('historical_date_section').style.display = 'none';
+        } else {
+            tabs[1].classList.add('active');
+            document.getElementById('historical_date_section').style.display = 'block';
+        }
+    }
+</script>
 </body>
 </html>
