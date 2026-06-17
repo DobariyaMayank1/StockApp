@@ -41,7 +41,7 @@
         <label for="ticker">Stock Ticker Symbol:</label>
         <input type="text" id="ticker" name="ticker" value="{{ ticker }}" placeholder="e.g. RELIANCE.NS, TCS.NS">
 
-        <div id="historical_date_section" style="display: {{ 'block' if mode == 'historical' else 'none' }};">
+        <div id="historical_date_section" class="{% if mode == 'historical' %}show-section{% else %}hide-section{% endif %}">
             <label for="historical_date">Select Past Target Date to Verify:</label>
             <input type="date" id="historical_date" name="historical_date" value="{{ selected_date }}">
         </div>
